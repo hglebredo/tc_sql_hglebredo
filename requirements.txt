@@ -1,4 +1,10 @@
+# setup big query
 python-dotenv>=1.0.0
 google-cloud-bigquery>=3.25.0
 google-auth>=2.35.0
+
+# carga datos
+numpy==2.5.3
+pandas==3.0.6
+faker==40.39.0
 
