@@ -170,4 +170,16 @@ Voy a tratar de describir las seguridades implementadas y las casuísticas cubie
 | `confirmar_subida` | stdin → sí/no | Confirmación explícita de borrado/carga (s/N), sin extrañas equivocaciones. Solo "`s` + `intro`" es sí. **Default: NO**) |
 
 ## Información IMPORTANTE
-> **[ATENCIÓN:]** La ejecución del Notebook directamente borra antiguos datos e inserta los nuevos, **SIN CONFIRMACIÓN**. 
+> **[ATENCIÓN:] De igual manera** la ejecución del **Notebook directamente borra antiguos datos** e inserta los nuevos, también **CON CONFIRMACIÓN**, aunque el set de volúmen de datos es el acotado por el enunciado:
+> ```text
+[✓ ÉXITO] Datos cargados en BigQuery:
+  categories    10 filas
+  customers     500 filas
+  products      70 filas
+  orders        2000 filas
+  order_items   4500 filas
+  payments      1600 filas
+  reviews       700 filas
+  ```     
+
+> Para que sea tenido en cuenta ante una eventual comprobación del propio flujo del notebook.    
