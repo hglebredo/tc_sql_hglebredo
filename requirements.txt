@@ -1,4 +1,12 @@
+# setup big query
 python-dotenv>=1.0.0
 google-cloud-bigquery>=3.25.0
 google-auth>=2.35.0
+pathlib>=1.0.1
 
+# carga datos
+pandas>=3.0.6
+faker>=24.2.0
+db-dtypes>=1.7.1
+pyarrow>=25.0.1
+ipykernel>=7.3.0

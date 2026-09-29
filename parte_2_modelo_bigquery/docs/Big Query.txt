@@ -1,0 +1,166 @@
+
+
+//  Proyecto: hglebredo-online
+//  Normalización: 3NF
+// ENUMS
+enum order_status {
+  pending
+  confirmed
+  shipped
+  delivered
+  cancelled
+  returned
+}
+
+enum payment_status {
+  completed
+  refunded
+  pending
+  failed
+}
+
+enum payment_method {
+  credit_card
+  debit_card
+  paypal
+  bank_transfer
+  apple_pay
+  google_pay
+}
+
+enum acquisition_channel {
+  organic
+  paid_ads
+  social_media
+  email
+  referral
+  affiliate
+}
+
+// TABLAS
+Table categories {
+  id INT [pk, increment]
+  name VARCHAR(100) [not null, unique]
+  description TEXT
+  Note: 'Clasificación jerárquica de productos (Smartphones, Laptops, Audio, etc.)'
+}
+
+Table customers {
+  id INT [pk, increment]
+  first_name VARCHAR(100) [not null]
+  last_name VARCHAR(100) [not null]
+  email VARCHAR(255) [not null, unique]
+  phone VARCHAR(30)
+  country VARCHAR(100) [not null]
+  city VARCHAR(100)
+  acquisition_channel acquisition_channel [default: 'organic']
+  created_at TIMESTAMP [default: `now()`]
+
+  indexes {
+    (country, city) [name: 'idx_customers_geo']
+    (acquisition_channel) [name: 'idx_customers_channel']
+  }
+
+  Note: 'Clientes del e-commerce. country/city directamente aquí (no tabla separada) para evitar sobre-normalización con <10 valores.'
+}
+
+Table products {
+  id INT [pk, increment]
+  category_id INT [not null, ref: > categories.id]
+  name VARCHAR(200) [not null]
+  description TEXT
+  price NUMERIC(10,2) [not null, check: `price >= 0`]
+  cost NUMERIC(10,2) [not null, check: `cost >= 0`]
+  stock INT [default: 0, check: `stock >= 0`]
+  is_active BOOLEAN [default: true]
+
+  indexes {
+    (category_id) [name: 'idx_products_category']
+  }
+
+  Note: 'Catálogo de productos. price = PVP actual. cost = coste de adquisición (para margen). El precio histórico se guarda en order_items.unit_price.'
+}
+
+Table orders {
+  id INT [pk, increment]
+  customer_id INT [not null, ref: > customers.id]
+  status order_status [default: 'pending']
+  shipping_address VARCHAR(255)
+  shipping_city VARCHAR(100)
+  shipping_country VARCHAR(100)
+  order_date TIMESTAMP [not null, default: `now()`]
+  shipped_date TIMESTAMP
+  delivered_date TIMESTAMP
+
+  indexes {
+    (customer_id) [name: 'idx_orders_customer']
+    (status) [name: 'idx_orders_status']
+    (order_date) [name: 'idx_orders_date']
+  }
+
+  Note: 'Cabecera de pedido. No almacena customer_name (violaría 3NF: dependencia transitiva orders → customer_id → name).'
+}
+
+Table order_items {
+  order_id INT [not null, ref: > orders.id]
+  product_id INT [not null, ref: > products.id]
+  quantity INT [not null, default: 1, check: `quantity > 0`]
+  unit_price NUMERIC(10,2) [not null, check: `unit_price >= 0`]
+  discount_pct NUMERIC(5,2) [default: 0, check: `discount_pct >= 0 AND discount_pct <= 100`]
+
+  indexes {
+    (order_id, product_id) [pk]
+    (product_id) [name: 'idx_items_product']
+  }
+
+  Note: 'Tabla intermedia N:M (orders ↔ products). unit_price = precio en el momento de la compra (puede diferir de products.price actual). Clave compuesta (order_id, product_id).'
+}
+
+Table payments {
+  id INT [pk, increment]
+  order_id INT [not null, unique, ref: - orders.id]
+  method payment_method [not null]
+  status payment_status [default: 'pending']
+  amount NUMERIC(12,2) [not null, check: `amount >= 0`]
+  currency VARCHAR(3) [default: 'EUR']
+  paid_at TIMESTAMP
+
+  indexes {
+    (status) [name: 'idx_payments_status']
+  }
+
+  Note: 'Relación 1:1 con orders (unique en order_id). Registra método, estado e importe del pago.'
+}
+
+Table reviews {
+  id INT [pk, increment]
+  order_id INT [not null]
+  product_id INT [not null]
+  rating INT [not null, check: `rating >= 1 AND rating <= 5`]
+  comment TEXT
+  created_at TIMESTAMP [default: `now()`]
+
+  indexes {
+    (order_id, product_id) [name: 'idx_reviews_item', unique]
+//    (rating) [name: 'idx_reviews_rating']
+  }
+
+  Note: 'Valoración sobre una línea de pedido concreta (order_id + product_id), no sobre el pedido completo. FK compuesta → order_items.'
+}
+
+
+// RELACIONES FK → clave compuesta de order_items
+
+
+Ref: reviews.(order_id, product_id) - order_items.(order_id, product_id)
+
+
+// RESUMEN DE RELACIONES
+//  customers    1 ──── N  orders
+//  categories   1 ──── N  products
+//  orders       1 ──── N  order_items
+//  products     1 ──── N  order_items
+//  orders       1 ──── 1  payments
+//  order_items  1 ──── N  reviews   (FK compuesta)
+//
+//  orders ↔ products  →  N:M resuelto por order_items
