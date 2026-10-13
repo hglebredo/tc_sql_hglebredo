@@ -8,7 +8,38 @@ Situado en la carpeta `parte_1_sql_murder_mistery/` .
 
 # Team Challenge SQL — Parte 2: modelo en BigQuery.
 
-En esta segunda parte puedo decir que tras trastear un poco con los notebooks, preferí enfrentarme directamente en la codificación del archivo `seed.py` presente en la carpeta `parte_2_modelo_bigquery/`. 
+## Nota para el corrector (13.10.2026)
+
+En atención a los comentarios entorno a la entrega y sobre los puntos pendientes en ésta:
+
+[✓] Notebook 3 con fallos, y no mergeado a `main`:  
+  ✓ Bucle de ejecución:  
+  ✓ Merge a `main`  
+
+[✓] Justificación de diseño del modelo de datos y preguntas  
+  ✓ Se realiza un cambio importante en el modelo de datos  
+  ✓ atributos atómicos, sin dependencias parciales o transitivas  
+
+[✓] Decisiones del diseño concreto  
+  ✓ `order_items.unit_price`  
+  ✓ `customers.country`  
+  ✓ `orders`.[`customer_id`, `customer_name`]  
+
+[✓] Formato incorrecto en `seed.py.unit_price`: ahora se genera como NUMERIC 
+
+[✓] NB01 - `customers.city` y `customers.acquision_channel` no definidos  
+
+[✓] NB02 - Problemas de carga e indentación  
+
+[✓] NB03 - No mergeado  
+  ✓ Bucle de ejecución  
+  ✓ Merge a `main`  
+
+[✓] Incongruencias en el lenguaje de definición: se modifican  
+
+[✓] Diagrama representado en `docs/er_diagram.png`  
+
+Se han documentado las justificaciones de diseño y normalización en [normalizacion.md](./parte_2_modelo_bigquery/docs/normalizacion.md).
 
 ## Entorno virtual
 
