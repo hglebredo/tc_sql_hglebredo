@@ -63,7 +63,6 @@ except ImportError:
     sys.exit(1)
 
 carpeta = os.path.dirname(os.getcwd())
-print(carpeta)
 
 # Configuración
 PROJECT_ID: str | None = os.getenv("GCP_PROJECT_ID")
@@ -307,18 +306,18 @@ def planificador(args: argparse.Namespace) -> tuple[dict[str, int], list[str]]:
 
 
 def rand_fecha(rnd: random.Random, start: date, end: date) -> date:
-    """Fecha aleatoria dentro del rango [start, end] (inclusive)."""
+    """Fecha aleatoria dentro del rango [start, end] (ambas inclusive)."""
     return start + timedelta(days=rnd.randint(0, (end - start).days))
 
 
 def rand_fechatime(rnd: random.Random, start: date, end: date) -> datetime:
-    """Fecha + hora aleatorias dentro del rango. Se usa en campos TIMESTAMP de BQ."""
+    """Fecha y hora aleatorias dentro del rango. Se usa en campos TIMESTAMP de BQ."""
     day = start + timedelta(days=rnd.randint(0, (end - start).days))
     return datetime(day.year, day.month, day.day, rnd.randint(0, 23), rnd.randint(0, 59), rnd.randint(0, 59))
 
 
 def gen_categorias(n_categorias: int) -> pd.DataFrame:
-    """Selecciona las primeras categorías del universo fijo CATEGORIAS."""
+    """Selecciona las primeras categorías del listado fijo de CATEGORIAS."""
     salida = [
         {"category_id": i, "name": name, "description": f"Categoría {name}"}
         for i, name in enumerate(CATEGORIAS[:n_categorias], start=1)
@@ -328,7 +327,6 @@ def gen_categorias(n_categorias: int) -> pd.DataFrame:
 
 def gen_clientes(n_clientes: int) -> pd.DataFrame:
     """Genera los clientes.
-
     created_at es la fecha de alta: ningún pedido del cliente puede ser
     anterior a esta fecha (la recupera main a partir de este DataFrame).
     """
@@ -356,7 +354,6 @@ def gen_clientes(n_clientes: int) -> pd.DataFrame:
 def gen_productos(df_categories: pd.DataFrame, n_products: int) -> pd.DataFrame:
     """Genera los productos (catálogo: sin stock ni coste; el precio histórico
     se guarda en order_items.unit_price).
-
     El unit_price de cada producto se saca del diccionario PRECIOS, que
     contiene los límites de precio por categoría.
     """
@@ -381,7 +378,6 @@ def gen_productos(df_categories: pd.DataFrame, n_products: int) -> pd.DataFrame:
 
 def gen_compras(df_products: pd.DataFrame, n_po: int, n_items: int) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Genera los pedidos de compra (purchase_orders) y sus líneas (purchase_items).
-
     (purchase_id, product_id) es único. El coste de cada línea es el precio de
     compra de ese producto en ese pedido (20%-75% del unit_price del catálogo)
     y stock es la cantidad que queda en almacén en stock_date.
@@ -417,9 +413,10 @@ def gen_compras(df_products: pd.DataFrame, n_po: int, n_items: int) -> tuple[pd.
         for pid in ids_productos:
             _gen(random.randrange(1, n_po + 1), pid)
     else:
+        print("\n[AVISO GENERADO]")
         print(
-            f"[i] purchase_items: {n_items} < products ({len(ids_productos)}): "
-            "algún producto quedará sin historial de compra (coste desconocido)."
+            f"   [i] purchase_items: {n_items} < products ({len(ids_productos)}): "
+            "    algún producto quedará sin historial de compra (coste desconocido)."
         )
 
     faltan = n_items - len(salida)
@@ -432,7 +429,6 @@ def gen_compras(df_products: pd.DataFrame, n_po: int, n_items: int) -> tuple[pd.
 
 def gen_pedidos(reg_dates: dict[int, str], paid_ids: set[int], n_orders: int) -> pd.DataFrame:
     """Genera los pedidos.
-
     Ningún pedido es anterior a la fecha de alta (created_at) de su cliente:
     reg_dates es {id: created_at} y se recupera del DataFrame de clientes que
     ya se generó. paid_ids son los orders con pago (1 por order); su estado es
@@ -472,7 +468,6 @@ def gen_pedidos(reg_dates: dict[int, str], paid_ids: set[int], n_orders: int) ->
 
 def gen_lineaspedido(df_orders: pd.DataFrame, df_products: pd.DataFrame, n_lines: int) -> pd.DataFrame:
     """Genera las líneas de pedido (1 pedido mínimo, (pedido, producto) único).
-
     El unit_price es el precio del producto en el momento de la compra: se
     deriva de products.unit_price con un margen de variación de ±15%.
     review_id nace vacío (None) y gen_valoracion lo rellena con el id de la
@@ -513,7 +508,6 @@ def gen_lineaspedido(df_orders: pd.DataFrame, df_products: pd.DataFrame, n_lines
 
 def gen_pago(df_orders: pd.DataFrame, df_order_items: pd.DataFrame, paid_ids: set[int]) -> pd.DataFrame:
     """Genera los pagos.
-
     El importe del pago es la suma de los valores de las líneas del order.
     Como máximo 1 payment por order (los que están en paid_ids).
     """
@@ -545,7 +539,6 @@ def gen_pago(df_orders: pd.DataFrame, df_order_items: pd.DataFrame, paid_ids: se
 
 def gen_valoracion(df_orders: pd.DataFrame, df_order_items: pd.DataFrame, n_reviews: int) -> pd.DataFrame:
     """Genera las valoraciones sobre líneas de pedido.
-
     Solo puede valorarse una línea (order, product) de un pedido entregado
     (delivered o returned) y con created_at posterior a la entrega.
     Como máximo 1 revisión por línea (FK 1:1 en order_items.review_id).
@@ -565,10 +558,6 @@ def gen_valoracion(df_orders: pd.DataFrame, df_order_items: pd.DataFrame, n_revi
     salida: list[dict[str, object]] = []
     # si se piden mas reviews que lineas entregadas, se recorta a esa cantidad (tope natural)
     objetivo = min(n_reviews, len(lineas_entregadas))
-    if objetivo < n_reviews:
-        print(
-            f"[i] reviews: {n_reviews} solicitadas pero solo hay {len(lineas_entregadas)} lineas entregadas: se generan {objetivo}."
-        )
     # 1 revisión por linea: se muestrea sin replacement sobre las lineas entregadas
     for oid, pid in random.sample(lineas_entregadas, objetivo):
         # la valoración siempre es posterior a la entrega (o a la fecha del pedido si no hay entrega)
@@ -588,13 +577,19 @@ def gen_valoracion(df_orders: pd.DataFrame, df_order_items: pd.DataFrame, n_revi
             (df_order_items["order_id"] == oid) & (df_order_items["product_id"] == pid),
             "review_id",
         ] = review_id
+    if objetivo < n_reviews:
+        print("\n[AVISO GENERADO]")
+        print(
+            f"    [i] reviews: {n_reviews} solicitadas pero solo hay {len(lineas_entregadas)} lineas entregadas: se generan {objetivo}."
+        )
     return pd.DataFrame(salida)
 
 
 def constructor_cliente(project: str) -> "bigquery.Client":
     """Cliente de BigQuery con cuenta de servicio de proyecto (env o clave fija del repo)."""
     credentials_path = Path(os.getenv("CREDENTIALS_PATH", CREDENTIALS_PATH))
-    print(f"[i] Usando credenciales: {credentials_path}")
+    print("\n[AVISO GENERADO]")
+    print(f"    [i] Usando credenciales: {credentials_path}")
     credentials = service_account.Credentials.from_service_account_file(credentials_path)  # type: ignore[no-untyped-call]
     return bigquery.Client(project=project, credentials=credentials)
 
@@ -614,16 +609,17 @@ def tipo_bq(column: str, df: pd.DataFrame, tabla: str) -> str:
 def load_table(client: "bigquery.Client", dataset: str, table_id: str, df: pd.DataFrame, location: str) -> None:
     """(Re)carga la tabla en un único job WRITE_TRUNCATE: atómico, sin la carrera create/insert."""
     if df.empty:
-        print(f"[i] {table_id} vacía: no hay nada que cargar.")
+        print("\n[AVISO GENERADO]")
+        print(f"    [i] {table_id} vacía: no hay nada que cargar.")
         return
     table_ref = client.dataset(dataset).table(table_id)
     config = bigquery.LoadJobConfig()
     config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
     config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
     config.schema = [bigquery.SchemaField(column, tipo_bq(column, df, table_id)) for column in df.columns]
-    # Los NaN de pandas (p. ej. shipped_date/delivered_date en pedidos sin estado
-    # de envío) se serializan como el literal "NaN", que no es JSON válido y BigQuery
-    # rechaza. Se convierten a None (null) antes de serializar.
+    # Los NaN de pandas (p. ej. shipped_date/delivered_date en pedidos sin estado de envío) 
+    # se serializan como el literal "NaN", que no es JSON válido y BigQuery rechaza. Se convierten
+    # a None (null) antes de serializar.
     df_clean = df.astype(object).where(pd.notna(df), None)
     job = client.load_table_from_json(df_clean.to_dict(orient="records"), table_ref, job_config=config, location=location)
     job.result()
@@ -651,12 +647,7 @@ def _fmt_row(cell_values, widths):
 
 
 def render_table(title, rows, header=None) -> str:
-    """Render rows in left-justified fixed-width columns, bookended by '=' lines.
-
-    Title sits between two '=' separators; an optional header row sits above the
-    data columns, each column sized to its widest string. width stays 60, matching
-    the separators seed.py prints elsewhere.
-    """
+    #
     lines = ["=" * 60]
     if title:
         lines.append(title)
